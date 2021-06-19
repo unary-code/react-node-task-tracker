@@ -42,21 +42,18 @@ const Task = (props) => {
     }
 
     return (
-        <div {...props} ref={props.innerRef} className={`task ${task.reminder ? 'reminder' : ''}`} onDoubleClick={() => onToggle(task.id)} style={{display: "flex", justifyContent: "space-between"}}>
-            <div>
+        <div {...props} ref={props.innerRef} className={`task ${task.reminder ? 'reminder' : ''}`} onDoubleClick={() => onToggle(task.id)} >
+            
             <h3>{task.text}</h3>
             <p>{task.date.month + "/" + task.date.day + "/" + task.date.year} </p>
             <p>Priority: {task.priority}</p>
-            </div>
-
-            <div style={{display: 'flex', alignContent: 'space-between'}}>
             <ul className="icon-list" style={{display: 'block'}}>
                 {/* the style on the ul to justifyContent towardss the flex-end is not necessary here */}
                 <FaEdit onClick={() => updateModal()} />
                 <FaTimes style={{color: 'red', cursor: 'pointer'}} onClick={() => onDelete(task.id)}/>
             </ul>
             <p style={{marginLeft: 'auto'}} style={{display: 'block'}}>{task.renderId}</p>
-            </div>
+            
 
             {/*
             <EditTask modal={modal} toggle={toggle} updateTask={updateTask} taskObj={task} />
