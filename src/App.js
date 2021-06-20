@@ -1,20 +1,47 @@
 import Header from './components/Header.js'
 import Tasks from './components/Tasks.js'
-import AddTask from './components/AddTask.js'
 import Task from './components/Task.js'
+
+import AddTask from './components/AddTask.js'
 import OptionsMenu from './components/OptionsMenu.js'
+import SearchBar from './components/SearchBar.js'
 
 import {useState, useEffect} from 'react'
 
 import {Button} from 'reactstrap'
+
 function App() {
+    
   const [tasks, setTasks] = useState([])
+
+  //URL CODE
+  const {search} = window.location;
+  const query = new URLSearchParams(search).get('s');
+
+  const filterPosts = (posts, query) => {
+    if (!posts) {
+      return posts;
+    }
+
+    if (!query) {
+        return posts;
+    }
+
+    return posts.filter((post) => {
+        const postText = post.text.toLowerCase();
+        return postText.includes(query);
+    });
+  };
+
+  const [searchQuery, setSearchQuery] = useState(query || '');
+  const filteredTasks = filterPosts(tasks, searchQuery);
 
   const taskDemo = {id: 9, text: 'Whatsup', date: {year: '2019', month: '7', day: '3'}, reminder: false};
 
   const [showAddTask, setShowAddTask] = useState(false)
-
   const [showOptionsMenu, setShowOptionsMenu] = useState(false)
+  const [showSearchBar, setShowSearchBar] = useState(false)
+  //const [showQueryBar, setShowQueryBar] = useState(false)
 
   const [postReq, setPostReq] = useState(null)
 
@@ -113,7 +140,7 @@ function App() {
         body: JSON.stringify({id: deleteReq})
     };
     fetch(`/api/courses/${deleteReq}`, requestOptions)
-        .then(response => response.json()).then(data => {console.log("data=", data); setTasks(data);});
+        .then(response => response.json()).then(data => {console.log("data=", data); setTasks(data.tasks);});
 
     //setTasks(tasks.filter((task) => task.id !== deleteReq))
   // empty dependency array means this effect will only run once (like componentDidMount in classes)
@@ -123,15 +150,27 @@ function App() {
 
     if (reorderFlag === null) return;
 
+    if (tasks === null || savedOptions === null) return;
+
     console.log("REORDER REQUEST in useEffect()");
 
-    const requestOptions = {
+    let requestOptions = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({data: tasks})
+      body: JSON.stringify({tasks: tasks})
     };
 
   fetch(`/api/courses/change-all`, requestOptions)
+  .then(response => response.json()).then(data => console.log("data"))
+  .catch(err => console.log("REORDER in useEffect fetch error=", err));
+
+  requestOptions = {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({savedOptions: savedOptions})
+  };
+
+  fetch(`/api/options`, requestOptions)
   .then(response => response.json()).then(data => console.log("data"))
   .catch(err => console.log("REORDER in useEffect fetch error=", err));
 
@@ -153,12 +192,14 @@ function App() {
 
     if (optionFlag === null) return;
 
+    if (tasks === null || savedOptions === null) return;
+
     console.log("OPTION UPDATE REQUEST in useEffect()");
 
     const requestOptions = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(savedOptions)
+      body: JSON.stringify({savedOptions: savedOptions})
     };
 
   fetch(`/api/options`, requestOptions)
@@ -187,6 +228,7 @@ function App() {
     taskListCopy.splice(dId, 0, reorderedItem);
 
     setTasks(taskListCopy);
+    setSavedOptions({...savedOptions, order: 'none', reverse: false})
 
     setReorderFlag(!reorderFlag);
     
@@ -289,15 +331,22 @@ function App() {
       </form>
 
       <h1>Hello World</h1>
-      <Header onAdd={() => {setShowOptionsMenu(false); setShowAddTask(!showAddTask);}} showAdd={showAddTask} onOptions={() => {setShowAddTask(false); setShowOptionsMenu(!showOptionsMenu);}} showOptions={showOptionsMenu}/>
+      <Header onAdd={() => {setShowOptionsMenu(false); setShowAddTask(!showAddTask);}} showAdd={showAddTask}
+      onOptions={() => {setShowAddTask(false); setShowOptionsMenu(!showOptionsMenu);}} showOptions={showOptionsMenu}
+      onSearch={() => {setShowSearchBar(!showSearchBar)}} showSearch={showSearchBar}/>
       {showAddTask &&
       <AddTask onAdd={addTask} />
       }
       {showOptionsMenu &&
-      <OptionsMenu onOptions={updateOptions} />
+      <OptionsMenu onOptions={updateOptions} savedOptions={savedOptions}/>
       }
+      {showSearchBar &&
+      <SearchBar searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}/>
+      }
+
       {tasks.length > 0 ? (
-      <Tasks tasks={tasks} onDelete={deleteTask} onToggle={toggleReminder} onReorder={reorderTasks}/>
+      <Tasks tasks={filteredTasks} onDelete={deleteTask} onToggle={toggleReminder} onReorder={reorderTasks}/>
       ): ('No tasks to show.') }
 
         <Button color="danger" onClick={() => {console.log('ttesting')}}>Launch demo modal!</Button>

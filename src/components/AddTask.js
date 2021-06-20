@@ -12,6 +12,36 @@ const AddTask = ({ onAdd }) => {
 
   const [priority, setPriority] = useState(10)
 
+  const [prereqText, setPrereqText] = useState('')
+
+  const processPrereqText = () => {
+    //prereqText (string) to prereq (array of numbers)
+
+    let prereq = null;
+
+    if (prereqText === null || !prereqText) {
+      prereq = null;
+      return prereq;
+    }
+
+    //currently, harsh implementation that only allows 1 comma (no spaces or other characters) between entries
+    //doesn't allow mistakes
+    //doesn't allow extra parantheses at either end of prereqText
+    //to fix this, can use regex in the future to allow for more flexibility
+
+    prereq = prereqText.split(",");
+    
+    //assume all elements of prereq can be parsed into ints
+    prereq = prereq.map((ele) => { return parseInt(ele)});
+
+    console.log("prereq array=");
+    for (let i=0; i<prereq.length; i++) {
+      console.log(prereq[i]+" "+(typeof(prereq[i])))
+    }
+
+    return prereq;
+  }
+
   const onSubmit = (e) => {
     e.preventDefault()
 
@@ -23,7 +53,11 @@ const AddTask = ({ onAdd }) => {
     console.log("SELECTEDDATE=" + selectedDate);
     console.log("SELECTEDDATE .toString() =" + selectedDate.toString());
 
-    onAdd({ text: text, date: {year: (1900+selectedDate.getYear()), month: (1+selectedDate.getMonth()), day: selectedDate.getDate()}, reminder: reminder, priority: parseInt(priority)})
+    const prereq = processPrereqText();
+
+    onAdd(
+      { text: text, date: {year: (1900+selectedDate.getYear()), month: (1+selectedDate.getMonth()), day: selectedDate.getDate()}, reminder: reminder, priority: parseInt(priority), prereq: prereq}
+    )
 
     setText('')
     //setDay('')
@@ -62,8 +96,16 @@ const AddTask = ({ onAdd }) => {
                 return <option value={cur} key={cur}>{cur}</option>
               })
             }
-
         </select>
+      </div>
+      <div className='form-control'>
+        <label>Prerequisites</label>
+        <input
+          type='text'
+          placeholder='Prereqs'
+          value={prereqText}
+          onChange={(e) => setPrereqText(e.target.value)}
+        />
       </div>
       <div className='form-control form-control-check'>
         <label>Set Reminder</label>

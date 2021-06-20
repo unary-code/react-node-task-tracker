@@ -23,6 +23,8 @@ let courses = [
       reminder: true,
       priority: 7,
       renderId: 1,
+      prereq: null,
+      done: false,
     },
     {
       id: 3,
@@ -31,6 +33,8 @@ let courses = [
       reminder: false,
       priority: 3,
       renderId: 2,
+      prereq: [1,3],
+      done: false,
     },
     {
       id: 4,
@@ -39,6 +43,8 @@ let courses = [
       reminder: true,
       priority: 10,
       renderId: 3,
+      prereq: null,
+      done: false,
     },
     {
       id: 5,
@@ -47,6 +53,8 @@ let courses = [
       reminder: false,
       priority: 8,
       renderId: 4,
+      prereq: null,
+      done: true,
     },
   ]
 
@@ -102,11 +110,133 @@ function compareProps(x, y) {
           return ((x.year > y.year) ? (1) : (-1));
     }
 
-
     //should return or throw Error: either x or y are of a type not supported (the implementation for comparing is not implemented)
     //either not both because the 1st if statement is not perfect. if x and y are two JS complex objects (not number, string, or boolean) but of different complex types,
     //typeof(x) === Object === typeof(y) so you will get past the 1st if statement even though x and y are of differnet types.
     return 0;
+}
+
+const findIndLinear = (courseVal, propName, reverse) => {
+    //O(n) Linear search
+    //courses array has to be sorted
+
+    let ind = -1;
+    let found = false;
+
+    if (reverse) {
+        if (courseVal >= courses[0][propName]) {
+            ind = 0;
+            found = true;
+        }
+    } else {
+        if (courseVal <= courses[0][propName]) {
+            ind = 0;
+            found = true;
+        }
+    }
+
+    if (!found) {
+        for (let i=0; i<courses.length-1; i++) {
+            const comparePropsArray = [compareProps(courseVal, courses[i][propName]), compareProps(courseVal, courses[i+1][propName])]
+            if (reverse) {
+                if (courses[i+1][propName] <= courseVal && courseVal <= courses[i][propName]) {
+                    ind=i+1;
+                    found=true;
+                    break;
+                }
+            } else {
+                if (courses[i][propName] <= courseVal && courseVal <= courses[i+1][propName]) {
+                    ind=i+1;
+                    found=true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!found) {
+        if (reverse) {
+            if (courseVal <= courses[courses.length-1][propName]) {
+                ind = courses.length;
+                found = true;
+            }
+        } else {
+            if (courseVal >= courses[courses.length-1][propName]) {
+                ind = courses.length;
+                found = true;
+            }
+        }
+    }
+
+    return ind;
+}
+
+const findIndBinary = (courseVal, propName, reverse) => {
+    //O(log(n)) Linear search
+    //courses array has to be sorted
+
+    let b = 0;
+    let e = courses.length-1;
+    let i = (b+e)/2;
+
+    let ind = -1;
+    let found = false;
+
+    if (reverse) {
+        if (courseVal >= courses[0][propName]) {
+            i = 0;
+            found = true;
+        }
+    } else {
+        if (courseVal <= courses[0][propName]) {
+            i = 0;
+            found = true;
+        }
+    }
+
+    if (!found) {
+
+        while (b <= e) {
+            const compareProps = compareProps(courses[i][propName], courseVal)
+            compareProps *= ((reverse) ? (-1) :(1))
+            if (compareProps < 0) {
+                //if reverse is false this means that [i] < courseVal
+                b = mid+1;
+            } else if (compareProps > 0) {
+                //if reverse is false this means that [i] < courseVal
+                e = mid-1;
+            } else {
+                //[i] === courseVal
+                //found match, can either insert new task at ind = i, ind = i-1, or ind = i+1
+                break;
+            }
+
+            i = Math.floor((b+e)/2);
+        }
+
+        if (b > e) {
+            //i should be 0, courses.length, or any index in between because courseVal was not contained in initial courses array          
+        } else {
+            found = true;
+        }
+    }
+
+    if (!found) {
+        if (reverse) {
+            if (courseVal <= courses[courses.length-1][propName]) {
+                i = courses.length;
+                found = true;
+            }
+        } else {
+            if (courseVal >= courses[courses.length-1][propName]) {
+                i = courses.length;
+                found = true;
+            }
+        }
+    }
+
+    ind = i;
+    return ind;
 }
 
 app.post('/api/courses', (req, res) => {
@@ -159,6 +289,9 @@ app.post('/api/courses', (req, res) => {
         //where courses[i].prop < x < courses[i+1].prop (if options.reverse is false)
         //or vice versa (courses[i+1].prop < x < courses[i].prop) (if options.reverse is true)
         
+        const ind = findIndLinear(courseVal, options.order, options.reverse);
+
+        /*
         let ind = -1;
         let found = false;
 
@@ -204,7 +337,8 @@ app.post('/api/courses', (req, res) => {
                 }
             }
         }
-        
+        */
+
         console.log("ind=" + ind);
         //found should be true
         courses.splice(ind, 0, course);
@@ -284,12 +418,12 @@ app.delete('/api/courses/:id', (req, res) => {
 
     console.log("courses after delete request=", courses);
 
-    res.send(courses);
+    res.send({tasks: courses});
 });
 
 app.put('/api/courses/change-all', (req, res) => {
     console.log("update-all req.body=", req.body);
-    courses = req.body.data;
+    courses = req.body.tasks;
 
     res.send(courses);
 });
@@ -344,7 +478,7 @@ const updateOrder = (orderOptions) => {
         
         //if reverse quantity was different, still don't do anything
 
-        savedOptions = {...savedOptions, order: 'none', reverse: 'false'}
+        savedOptions = {...savedOptions, order: 'none', reverse: false}
         return;
       }
 
@@ -390,7 +524,8 @@ const updateOrder = (orderOptions) => {
 app.put('/api/options', (req, res) => {
     //since the URL is /api/options, req.body is options and doesn't contain tasks
 
-    const options = req.body;
+    const options = req.body.savedOptions;
+    console.log("options=", options);
     updateOrder(options);
 
     //savedOptions = {...savedOptions, options};

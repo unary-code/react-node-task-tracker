@@ -65,6 +65,10 @@ body {
   border-left: 5px solid green;
 }
 
+.task.done {
+  background-color: #ffff00;
+}
+
 .task h3 {
   display: flex;
   align-items: center;

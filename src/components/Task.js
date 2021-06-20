@@ -41,19 +41,26 @@ const Task = (props) => {
         console.log("Test var after updateModal = " + test);
     }
 
+    //Assume task.date is valid (that it has month, day, and year properties which should be all of type number)
+    //Maybe could import joi and validateDate from api.js to make sure this assumption is true
+    //However, the only current way to input guarantees that task has date property and either date is a null object, or date is a object with all 3 day, month, year properties
     return (
-        <div {...props} ref={props.innerRef} className={`task ${task.reminder ? 'reminder' : ''}`} onDoubleClick={() => onToggle(task.id)} >
-            
-            <h3>{task.text}</h3>
-            <p>{task.date.month + "/" + task.date.day + "/" + task.date.year} </p>
-            <p>Priority: {task.priority}</p>
+        <div {...props} ref={props.innerRef} className={`task ${task.reminder ? 'reminder' : ''} ${task.done ? 'done' : ''}`} onDoubleClick={() => onToggle(task.id)}>
+            <div>
+            <h3>{task.text || "No text set"}</h3>
+            <p>{task.date ? (task.date.month + "/" + task.date.day + "/" + task.date.year) : ("No date set")} </p>
+            <p>Priority: {task.priority || "No priority set"}</p>
+            </div>
+
+            <div>
             <ul className="icon-list" style={{display: 'block'}}>
                 {/* the style on the ul to justifyContent towardss the flex-end is not necessary here */}
                 <FaEdit onClick={() => updateModal()} />
                 <FaTimes style={{color: 'red', cursor: 'pointer'}} onClick={() => onDelete(task.id)}/>
             </ul>
-            <p style={{marginLeft: 'auto'}} style={{display: 'block'}}>{task.renderId}</p>
-            
+            <p style={{marginLeft: 'auto'}} style={{display: 'block'}}>ID: {task.renderId}</p>
+            <p>Prereqs: {task.prereq ? (task.prereq.map((ele) => {return ele+","})) : ('No prerequisites')}</p>
+            </div>
 
             {/*
             <EditTask modal={modal} toggle={toggle} updateTask={updateTask} taskObj={task} />
